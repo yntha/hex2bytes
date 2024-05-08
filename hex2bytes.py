@@ -1,4 +1,5 @@
 import sys
+import math
 import re
 
 from argparse import ArgumentParser, Namespace
@@ -14,6 +15,9 @@ def main(args: Namespace):
     
     code = args.var_name + "bytes.fromhex(\n"
     data = bytes.fromhex(args.hex_string)
+
+    # get the word size of data, then multiply by two to get the total number of nibbles in the word size
+    data_nibbles = (2 ** math.ceil(math.log2(len(data).bit_length() / 8))) * 2
 
     last_line_len = 0
 
@@ -41,14 +45,25 @@ def main(args: Namespace):
         last_line_len = len(row)
         code += row + '"'
 
-        if args.ascii:
+        if args.ascii or args.offsets:
             code += "  # "
 
-            for b in chunks[i]:
-                if b < 0x7f and b >= 0x20:
-                    code += chr(b)
-                else:
-                    code += "."
+            if args.ascii:
+                for b in chunks[i]:
+                    if b < 0x7f and b >= 0x20:
+                        code += chr(b)
+                    else:
+                        code += "."
+                
+                if args.offsets:
+                    if len(chunks[i]) != args.row_width:
+                        code += " " * (args.row_width - len(chunks[i]))
+                    
+                    code += " | "
+            
+            if args.offsets:
+                offset = i * args.row_width
+                code += f"0x{offset:0{data_nibbles}x}"
         
         code += "\n"
     
@@ -98,6 +113,13 @@ def parse_args() -> Namespace:
     )
 
     parser.add_argument(
+        "-o",
+        help="display offsets",
+        action="store_true",
+        default=False
+    )
+
+    parser.add_argument(
         "-v",
         help="variable name to assign the bytes to",
         type=str,
@@ -128,6 +150,7 @@ def parse_args() -> Namespace:
         group_size = args.g,
         row_width = args.w,
         indent_level = args.i,
+        offsets = args.o,
         ascii = args.ascii,
         var_name = args.v,
         hex_string = args.hex_string
