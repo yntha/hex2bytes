@@ -43,6 +43,27 @@ _0x1fc9ef9 = bytes.fromhex(
 )
 ```
 
+**Dumping From A File:**
+Note: this enables auto generated variable names if one isn't already given.
+
+```
+$ python hex2bytes.py --ascii -o ReadMe.md:0x1400
+_0x1400 = bytes.fromhex(  # size: 0x57(87) bytes
+    "7832 6279 7465 732e 7079 2036 3436 3537"  # x2bytes.py 64657 | 0x00
+    "3830 4133 3033 3333 3530 3041 3038 440d"  # 80A30333500A08D. | 0x10
+    "0a62 7974 6573 2e66 726f 6d68 6578 280d"  # .bytes.fromhex(. | 0x20
+    "0a20 2020 2022 3634 3635 2037 3830 6120"  # .    "6465 780a  | 0x30
+    "3330 3333 2033 3530 3020 6130 3864 220d"  # 3033 3500 a08d". | 0x40
+    "0a29 0d0a 6060 60                      "  # .)..```          | 0x50
+)
+
+$ python hex2bytes.py --ascii -o ReadMe.md:5120[32]
+_0x1400 = bytes.fromhex(  # size: 0x20(32) bytes
+    "7832 6279 7465 732e 7079 2036 3436 3537"  # x2bytes.py 64657 | 0x00
+    "3830 4133 3033 3333 3530 3041 3038 440d"  # 80A30333500A08D. | 0x10
+)
+```
+
 **AArch64 Instructions:**
 ```
 $ python hex2bytes.py -v insns -i 2 -g 2 --ascii e063029121018052f381fc97e10300aa60f7009000c0399167c3fb97e0630291f54efc97e0f4009002f500b0006c40f9420447f961f7009021c03991c650fc9

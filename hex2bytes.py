@@ -3,6 +3,7 @@ import math
 import re
 
 from argparse import ArgumentParser, Namespace
+from pathlib import Path
 
 
 # change this number to change the indent size for the whole program
@@ -13,8 +14,8 @@ def main(args: Namespace):
     if args.row_width % args.group_size:
         raise Exception("Column size must be a multiple of row width.")
     
-    code = args.var_name + "bytes.fromhex(\n"
     data = bytes.fromhex(args.hex_string)
+    code = args.var_name + f"bytes.fromhex(  # size: {hex(len(data))}({len(data)}) bytes\n"
 
     # get the word size of data, then multiply by two to get the total number of nibbles in the word size
     data_nibbles = (2 ** math.ceil(math.log2(len(data).bit_length() / 8))) * 2
@@ -85,6 +86,53 @@ def sanitize_hex_string(hexstr: str) -> str:
     )
 
 
+def parse_file_info(file_info: str) -> tuple[str, int, int]:
+    file_path = file_info.split(":")
+
+    if len(file_path) == 1:
+        return (file_path[0], 0, 0)
+
+    match = re.match(r"([a-fA-F0-9x]+)(?:\[([a-fA-F0-9x]+)\])?", file_path[1])
+
+    if match is None:
+        raise Exception("Failed to parse file info.")
+    
+    return (file_path[0], *match.groups())
+
+
+def get_hex_from_file(file_info: str) -> tuple[str, int]:
+    file_path, offset, length = parse_file_info(file_info)
+    file_path = Path(file_path)
+
+    if offset is not None and offset.startswith("0x"):
+        offset = int(offset, base=16)
+    elif offset is not None:
+        offset = int(offset)
+    else:
+        offset = 0
+    
+    if length is not None and length.startswith("0x"):
+        length = int(length, base=16)
+    elif length is not None:
+        length = int(length)
+    else:
+        length = 0
+
+    if not file_path.is_file():
+        raise Exception("File does not exist or is not a file.")
+    
+    file_data: bytes = file_path.read_bytes()
+
+    if len(file_data) < offset:
+        raise Exception("Offset goes past file size.")
+    
+    if len(file_data) < (offset + length):
+        raise Exception("Length goes past file size.")
+    
+    stop = (offset + length) if length else None
+    return (file_data[offset:stop].hex(), offset)
+
+
 def parse_args() -> Namespace:
     parser = ArgumentParser()
 
@@ -135,13 +183,22 @@ def parse_args() -> Namespace:
     )
 
     parser.add_argument(
-        "hex_string",
-        help="string of hex encoded bytes to convert",
+        "hex_or_file",
+        help="string of hex encoded bytes to convert or a file path + offset in the format file:offset[length]. length is optional",
         type=str
     )
 
     args = parser.parse_args()
-    args.hex_string = sanitize_hex_string(args.hex_string)
+
+    if not re.match(r"[a-fA-F0-9x ]+", args.hex_or_file):
+        file_data, offset = get_hex_from_file(args.hex_or_file)
+
+        if offset != 0 and len(args.v) == 0:
+            args.v = "_" + hex(offset)
+        
+        args.hex_or_file = file_data
+    else:
+        args.hex_or_file = sanitize_hex_string(args.hex_or_file)
 
     if len(args.v) > 0:
         args.v += " = "
@@ -153,7 +210,7 @@ def parse_args() -> Namespace:
         offsets = args.o,
         ascii = args.ascii,
         var_name = args.v,
-        hex_string = args.hex_string
+        hex_string = args.hex_or_file
     )
 
 
