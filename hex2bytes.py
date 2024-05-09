@@ -92,7 +92,7 @@ def parse_file_info(file_info: str) -> tuple[str, int, int]:
     if len(file_path) == 1:
         return (file_path[0], 0, 0)
 
-    match = re.match(r"([a-fA-F0-9x]+)(?:\[([a-fA-F0-9x]+)\])?", file_path[1])
+    match = re.match(r"(?:([a-fA-F0-9x]+))?(?:\[([a-fA-F0-9x]+)\])?", file_path[1])
 
     if match is None:
         raise Exception("Failed to parse file info.")
