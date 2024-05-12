@@ -18,7 +18,7 @@ def main(args: Namespace):
     code = args.var_name + f"bytes.fromhex(  # size: {hex(len(data))}({len(data)}) bytes\n"
 
     # get the word size of data, then multiply by two to get the total number of nibbles in the word size
-    data_nibbles = (2 ** math.ceil(math.log2(len(data).bit_length() / 8))) * 2
+    data_nibbles = int((2 ** math.ceil(math.log2(len(data).bit_length() / 8))) * 2)
 
     last_line_len = 0
 
